@@ -1,0 +1,44 @@
+name: docker image
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Files
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: Git Version
+      uses: PaulHatch/semantic-version@v4.0.3
+      with:
+        major_pattern: "Rel: "
+        minor_pattern: "Feat: "
+        format: "${major}.${minor}.${patch}"
+      id: version
+
+    - name: Docker Login
+      run: |
+        docker login -u ${{ secrets.DOCKER_USER }} -p ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Docker Build
+      env:
+        TAG: ${{ steps.version.outputs.version }}
+      run: |
+        docker build -t kevinmolinadev/test:$TAG .
+        docker build -t kevinmolinadev/test .
+
+    - name: Docker Push
+      env:
+        TAG: ${{ steps.version.outputs.version }}
+      run: |
+        docker push kevinmolinadev/test:$TAG
+        docker push kevinmolinadev/test
+      
